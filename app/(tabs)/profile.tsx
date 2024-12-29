@@ -1,12 +1,13 @@
-import React, {useEffect, useState} from 'react';
-import {StyleSheet} from 'react-native';
-import {useRouter} from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, ImageBackground } from 'react-native';
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import {ThemedView} from '@/components/ThemedView';
-import {ThemedText} from '@/components/ThemedText';
-import {ActivityIndicator, Button, Dialog, PaperProvider, Portal, Text} from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ThemedText } from '@/components/ThemedText';
+import { ActivityIndicator, Button, Dialog, PaperProvider, Portal, Text } from 'react-native-paper';
 import API_URL from '@/config/config';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type UserProfile = {
     username: string;
@@ -26,12 +27,23 @@ const ProfileScreen = () => {
     const fetchProfile = async () => {
         try {
             const token = await AsyncStorage.getItem('token');
+            if (!token) {
+                router.replace('/auth/LoginScreen');
+                return;
+            }
+
             const response = await axios.get<{ data: UserProfile }>(`${API_URL}/api/profile`, {
-                headers: {Authorization: `Bearer ${token}`},
+                headers: { Authorization: `Bearer ${token}` },
             });
-            setProfile(response.data.data);
+
+            if (response.data && response.data.data) {
+                setProfile(response.data.data);
+            } else {
+                router.replace('/auth/LoginScreen');
+            }
         } catch (error) {
             console.error('Failed to fetch profile', error);
+            router.replace('/auth/LoginScreen');
         } finally {
             setLoading(false);
         }
@@ -49,72 +61,129 @@ const ProfileScreen = () => {
     if (loading) {
         return (
             <PaperProvider>
-                <ThemedView style={styles.container}>
-                    <ActivityIndicator animating={true}/>
-                </ThemedView>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator animating={true} color="#6200ee" size="large" />
+                </View>
             </PaperProvider>
         );
     }
 
     return (
         <PaperProvider>
-            <ThemedView style={styles.container}>
-                {profile ? (
-                    <ThemedView>
-                        <ThemedText style={styles.title}>Profile</ThemedText>
-                        <ThemedText style={styles.label}>Username:</ThemedText>
-                        <ThemedText style={styles.value}>{profile.username}</ThemedText>
-                        <ThemedText style={styles.label}>Email:</ThemedText>
-                        <ThemedText style={styles.value}>{profile.email}</ThemedText>
-                        <Button mode="contained" onPress={handleLogout} style={styles.logoutButton}>
-                            Log Out
-                        </Button>
-                    </ThemedView>
-                ) : (
-                    <ThemedText>No profile data available</ThemedText>
-                )}
-                <Portal>
-                    <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-                        <Dialog.Title>Logout</Dialog.Title>
-                        <Dialog.Content>
-                            <Text>Are you sure you want to logout?</Text>
-                        </Dialog.Content>
-                        <Dialog.Actions>
-                            <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
-                            <Button onPress={confirmLogout}>OK</Button>
-                        </Dialog.Actions>
-                    </Dialog>
-                </Portal>
-            </ThemedView>
+            <LinearGradient
+                colors={["#6a11cb", "#2575fc"]}
+                style={styles.gradientBackground}
+            >
+                <View style={styles.contentContainer}>
+                    {profile ? (
+                        <View style={styles.profileContainer}>
+                            <View style={styles.headerContainer}>
+                                <Icon name="account-circle" size={80} color="white" />
+                                <ThemedText style={styles.username}>{profile.username}</ThemedText>
+                                <ThemedText style={styles.email}>{profile.email}</ThemedText>
+                            </View>
+                            <View style={styles.infoCard}>
+                                <Icon name="account" size={20} color="#6200ee" style={styles.icon} />
+                                <ThemedText style={styles.label}>Username</ThemedText>
+                                <ThemedText style={styles.value}>{profile.username}</ThemedText>
+                            </View>
+                            <View style={styles.infoCard}>
+                                <Icon name="email" size={20} color="#6200ee" style={styles.icon} />
+                                <ThemedText style={styles.label}>Email</ThemedText>
+                                <ThemedText style={styles.value}>{profile.email}</ThemedText>
+                            </View>
+                            <Button mode="contained" onPress={handleLogout} style={styles.logoutButton}>
+                                Log Out
+                            </Button>
+                        </View>
+                    ) : (
+                        <ThemedText>No profile data available</ThemedText>
+                    )}
+                    <Portal>
+                        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+                            <Dialog.Title>Logout</Dialog.Title>
+                            <Dialog.Content>
+                                <Text>Are you sure you want to logout?</Text>
+                            </Dialog.Content>
+                            <Dialog.Actions>
+                                <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
+                                <Button onPress={confirmLogout}>OK</Button>
+                            </Dialog.Actions>
+                        </Dialog>
+                    </Portal>
+                </View>
+            </LinearGradient>
         </PaperProvider>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 16,
     },
-    title: {
+    gradientBackground: {
+        flex: 1,
+    },
+    contentContainer: {
+        flex: 1,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    profileContainer: {
+        alignItems: 'center',
+        width: '100%',
+    },
+    headerContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    username: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 24,
-        color: '#333',
+        color: 'white',
+        marginTop: 10,
+    },
+    email: {
+        fontSize: 16,
+        color: '#ddd',
+    },
+    infoCard: {
+        width: '100%',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        marginVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
     },
     label: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginTop: 16,
-        color: '#333',
+        fontSize: 14,
+        color: '#888',
+        marginLeft: 10,
     },
     value: {
-        fontSize: 18,
-        color: '#666',
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+        marginLeft: 10,
+    },
+    icon: {
+        marginRight: 10,
     },
     logoutButton: {
-        marginTop: 24,
+        marginTop: 20,
+        backgroundColor: '#ff5252',
+        borderRadius: 25,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
     },
 });
 

@@ -38,15 +38,17 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/auth/LoginScreen');
-      }
+useEffect(() => {
+  if (!isLoading && loaded) {
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    } else {
+      router.replace('/auth/LoginScreen');
     }
-  }, [isAuthenticated, isLoading]);
+  }
+}, [isLoading, loaded, isAuthenticated]);
+
+  
 
   if (!loaded || isLoading) {
     return null; // Optionally return a custom loading/splash screen
@@ -58,7 +60,7 @@ export default function RootLayout() {
           <Stack>
             <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
             <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)"  options={{ headerShown: false }}/>
             <Stack.Screen name="todo/[id]" />
             <Stack.Screen name="+not-found" />
           </Stack>
